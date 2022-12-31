@@ -43,6 +43,26 @@ fn main() {
     config.profile("Release");
     config.define("OQS_BUILD_ONLY_LIB", "Yes");
 
+    if std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default().as_str() == "wasi" {
+        if std::env::var("CARGO_CFG_TARGET_ARCH")
+            .unwrap_or_default()
+            .as_str()
+            == "wasm64"
+        {
+            config.target("wasm64-wasi");
+        } else {
+            config.target("wasm32-wasi");
+        }
+    }
+
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
+    if target_os == "wasi" {
+        println!("Compiling OQS to WASI ...");
+        let wasi_sdk_path =
+            &std::env::var("WASI_SDK_DIR").expect("missing environment variable: WASI_SDK_DIR");
+        config.cflag(format!("--sysroot={}", wasi_sdk_path).as_str());
+    }
+
     if cfg!(feature = "non_portable") {
         // Build with CPU feature detection or just enable whatever is available for this CPU
         config.define("OQS_DIST_BUILD", "No");
